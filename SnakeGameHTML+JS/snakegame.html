@@ -1,0 +1,227 @@
+<!--
+This build was made with the Educative
+JS Snake Game Tutorial found here:
+ducative.io/blog/javascript-snake-game-tutorial
+ -->
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <title>Snake Game</title>
+  </head>
+
+  <body>
+    <h1>Snake Game</h1>
+    <div id="score">0</div>
+    <canvas id="snakeboard" width="400" height="400"></canvas>
+    <style>
+      h1 {
+        text-align: center;
+      }
+      #snakeboard {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #score {
+        text-align: center;
+        font-size: 100px;
+      }
+    </style>
+  </body>
+
+  <script>
+    // set colours of board and snake
+    const board_border = "black";
+    const board_background = "white";
+    const snake_col = "darkgreen";
+    const snake_border = "black";
+    // set the beginning position of the snake
+    let snake = [{
+        x: 200,
+        y: 200
+      },
+      {
+        x: 190,
+        y: 200
+      },
+      {
+        x: 180,
+        y: 200
+      },
+      {
+        x: 170,
+        y: 200
+      },
+      {
+        x: 160,
+        y: 200
+      }
+    ]
+
+    // set the beginning score
+    let score = 0;
+    // true if changing direction
+    let changingDirection = false;
+    // horizontal velocity
+    let food_x;
+    let food_y;
+    let dx = 10;
+    // vertical velocity
+    let dy = 0;
+
+    // get canvas element
+    const snakeboard = document.getElementById("snakeboard");
+    // return 2d drawing context
+    const snakeboard_ctx = snakeboard.getContext("2d");
+    // start Game
+    main();
+
+    genFood();
+
+    document.addEventListener("keydown", changeDirection);
+
+    // main function called repeatedly to keep game running
+    function main() {
+
+      if (hasGameEnded()) return;
+
+      changingDirection = false;
+      setTimeout(function onTick() {
+      clearBoard();
+      drawFood();
+      moveSnake();
+      drawSnake();
+      // repeat
+      main();
+    }, 100)
+  }
+
+    // draw a border around the canvas
+    function clearBoard() {
+      // select the colour to fill the drawing
+      snakeboard_ctx.fillStyle = board_background;
+      // select the colour for the border of the canvas
+      snakeboard_ctx.strokeStyle = board_border;
+      // draw a "filled" rectangle to cover the entire canvas
+      snakeboard_ctx.fillRect(0, 0, snakeboard.width, snakeboard.height);
+      // draw a "border" around the entire canvas
+      snakeboard_ctx.strokeRect(0, 0, snakeboard.width, snakeboard.height);
+    }
+
+    // draw the snake on the canvas
+    function drawSnake() {
+      // draw each part
+      snake.forEach(drawSnakePart)
+    }
+
+    function drawFood() {
+      snakeboard_ctx.fillStyle = "darkred";
+      snakeboard_ctx.strokeStyle = "black";
+      snakeboard_ctx.fillRect(food_x, food_y, 10, 10);
+      snakeboard_ctx.strokeRect(food_x, food_y, 10, 10);
+    }
+
+    // Draw one snake part
+    function drawSnakePart(snakePart) {
+      // Set the colour of the snake part
+      snakeboard_ctx.fillStyle = snake_col;
+      // Set the border colour of the snake part
+      snakeboard_ctx.strokeStyle = snake_border;
+      // Draw a "filled" rectangle to represent the snake part at the coordinates
+      // the part is located
+      snakeboard_ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
+      // Draw a border around the snake part
+      snakeboard_ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+    }
+
+    function hasGameEnded() {
+      for (let i = 4; i < snake.length; i++) {
+        if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
+      }
+      const hitLeftWall = snake[0].x < 0;
+      const hitRightWall = snake[0].x > snakeboard.width - 10;
+      const hitTopWall = snake[0].y < 0;
+      const hitBottomWall = snake[0].y > snakeboard.height - 10;
+      return hitLeftWall || hitRightWall || hitTopWall || hitBottomWall
+    }
+
+    function randomFood(min, max) {
+      return Math.round((Math.random() * (max - min) + min) / 10) * 10;
+    }
+
+    function genFood() {
+      // generate a random x coordinate for the food
+      food_x = randomFood(0, snakeboard.width - 10);
+      // generate a random y coordinate for the food
+      food_y = randomFood(0, snakeboard.height - 10);
+      // if the new food location is the current position of the snake,
+      // generate a new one
+      snake.forEach(function has_snake_eaten_food(part) {
+        const has_eaten = part.x == food_x && part.y == food_y;
+        if (has_eaten) genFood();
+      });
+    }
+
+    function changeDirection(event) {
+      const LEFTKEY = 37;
+      const RIGHTKEY = 39;
+      const UPKEY = 38;
+      const DOWNKEY = 40;
+
+
+      // prevent the snake from reversing
+      if (changingDirection) return;
+      changingDirection = true;
+      const keyPressed = event.keyCode;
+      const goingUp = dy === -10;
+      const goingDown = dy === 10;
+      const goingRight = dx === 10;
+      const goingLeft = dx === -10;
+
+      if (keyPressed === LEFTKEY && !goingRight) {
+        dx = -10;
+        dy = 0;
+      }
+      if (keyPressed === UPKEY && !goingDown) {
+        dx = 0;
+        dy = -10;
+      }
+      if (keyPressed === RIGHTKEY && !goingLeft) {
+        dx = 10;
+        dy = 0;
+      }
+      if (keyPressed === DOWNKEY && !goingUp) {
+        dx = 0;
+        dy = 10;
+      }
+    }
+
+
+    function moveSnake() {
+      // create the new snake's head
+      const head = {
+        x: snake[0].x + dx,
+        y: snake[0].y + dy
+      };
+      // add new head to the beginning of the body
+      snake.unshift(head);
+      const has_eaten_food = snake[0].x === food_x && snake[0].y === food_y;
+      if (has_eaten_food) {
+        // increase score
+        score += 10;
+        // display score on screen
+        document.getElementById("score").innerHTML = score;
+        // generate new food location
+        genFood();
+      } else {
+        // pop off tail at the end of the body
+        snake.pop();
+      }
+    }
+  </script>
+
+</html>
